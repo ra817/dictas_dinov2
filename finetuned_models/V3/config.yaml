@@ -1,0 +1,60 @@
+# DictA-S (DINOv2) Configuration
+
+
+#System
+device: "cuda"
+seed: 42
+log_interval: 10
+
+
+#Dataset
+data:
+  dataset_names: ["normal"]  #"mvtecad", "mvtec3d", "visa", "mpdd", "btad", "realiad",
+  dataset_roots:
+    mvtecad: "/SOLUTION/Anomaly_detection_project/dataset/MVTecAD"
+    mvtec3d: "/SOLUTION/Anomaly_detection_project/dataset/mvtec3D"
+    visa: "/SOLUTION/Anomaly_detection_project/dataset/visa"
+    btad: "/SOLUTION/Anomaly_detection_project/dataset/BeanTech_AD"
+    mpdd: "/SOLUTION/Anomaly_detection_project/dataset/MPDD"
+    realiad: "/SOLUTION/Anomaly_detection_project/dataset/Real-IAD/RealIAD/realiad_1024"
+    normal: "/SOLUTION/Defect_detection_pcb/dataset/Few_shot_training_data/cropped_augmented_pcb_architecture"
+
+  img_size: 518
+  multi_scale: False
+  strong_aug: False
+
+
+#Model
+backbone:
+  repo: "facebookresearch/dinov2"
+  name: "dinov2_vitb14"
+  frozen: True
+  layer_indices: [2,5,8,11]
+
+
+Dictionary:
+  feat_dim: 768
+  dict_size: 4096
+  lambda_align: 0.05
+  lambda_smooth: 0.05
+  Lookup_Temp:   0.2
+  Top_k:         5
+
+  
+
+#Training
+training:
+  val_split: 0.1
+  num_epochs: 100
+  learning_rate: 0.0001
+  batch_size: 2
+  num_workers: 4
+  optimizer: "AdamW"
+  weight_decay: 0.01
+  patience: 10
+  continue_training: True
+  resume_checkpoint: "finetuned_models/baseline/best_model_baseline.pth"
+
+
+#Output
+save_dir: "finetuned_models/V3"
