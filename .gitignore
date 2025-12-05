@@ -1,0 +1,6 @@
+model_checkpoint/
+
+finetuned_models/
+
+# Ignore all .pth files
+*.pth

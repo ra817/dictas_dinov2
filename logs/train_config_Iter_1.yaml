@@ -1,0 +1,100 @@
+!!python/object/new:easydict.EasyDict
+state:
+  device: cuda
+  seed: 42
+  log_interval: 10
+  data: &id004 !!python/object/new:easydict.EasyDict
+    state:
+      dataset_names: &id001
+      - normal
+      dataset_roots: &id002 !!python/object/new:easydict.EasyDict
+        state:
+          mvtecad: /SOLUTION/Anomaly_detection_project/dataset/MVTecAD
+          mvtec3d: /SOLUTION/Anomaly_detection_project/dataset/mvtec3D
+          visa: /SOLUTION/Anomaly_detection_project/dataset/visa
+          btad: /SOLUTION/Anomaly_detection_project/dataset/BeanTech_AD
+          mpdd: /SOLUTION/Anomaly_detection_project/dataset/MPDD
+          realiad: /SOLUTION/Anomaly_detection_project/dataset/Real-IAD/RealIAD/realiad_1024
+          golden_board: /SOLUTION/Defect_detection_pcb/dataset/golden_board_metafloor/set_1
+          golden_board_1: data
+          normal: /SOLUTION/Defect_detection_pcb/dataset/Few_shot_training_data/cropped_augmented_pcb_architecture
+        dictitems:
+          mvtecad: /SOLUTION/Anomaly_detection_project/dataset/MVTecAD
+          mvtec3d: /SOLUTION/Anomaly_detection_project/dataset/mvtec3D
+          visa: /SOLUTION/Anomaly_detection_project/dataset/visa
+          btad: /SOLUTION/Anomaly_detection_project/dataset/BeanTech_AD
+          mpdd: /SOLUTION/Anomaly_detection_project/dataset/MPDD
+          realiad: /SOLUTION/Anomaly_detection_project/dataset/Real-IAD/RealIAD/realiad_1024
+          golden_board: /SOLUTION/Defect_detection_pcb/dataset/golden_board_metafloor/set_1
+          golden_board_1: data
+          normal: /SOLUTION/Defect_detection_pcb/dataset/Few_shot_training_data/cropped_augmented_pcb_architecture
+      img_size: 518
+      multi_scale: false
+      strong_aug: false
+    dictitems:
+      dataset_names: *id001
+      dataset_roots: *id002
+      img_size: 518
+      multi_scale: false
+      strong_aug: false
+  backbone: &id005 !!python/object/new:easydict.EasyDict
+    state:
+      name: dinov2_vitb14
+      frozen: true
+      layer_indices: &id003
+      - 2
+      - 5
+      - 8
+      - 11
+    dictitems:
+      name: dinov2_vitb14
+      frozen: true
+      layer_indices: *id003
+  Dictionary: &id006 !!python/object/new:easydict.EasyDict
+    state:
+      feat_dim: 768
+      dict_size: 4096
+      lambda_align: 0.05
+      lambda_smooth: 0.05
+      Lookup_Temp: 0.2
+      Top_k: 5
+    dictitems:
+      feat_dim: 768
+      dict_size: 4096
+      lambda_align: 0.05
+      lambda_smooth: 0.05
+      Lookup_Temp: 0.2
+      Top_k: 5
+  training: &id007 !!python/object/new:easydict.EasyDict
+    state:
+      val_split: 0.1
+      num_epochs: 100
+      learning_rate: 0.0001
+      batch_size: 64
+      num_workers: 4
+      optimizer: AdamW
+      weight_decay: 0.01
+      patience: 10
+      continue_training: true
+      resume_checkpoint: finetuned_models/baseline/best_model_baseline.pth
+    dictitems:
+      val_split: 0.1
+      num_epochs: 100
+      learning_rate: 0.0001
+      batch_size: 64
+      num_workers: 4
+      optimizer: AdamW
+      weight_decay: 0.01
+      patience: 10
+      continue_training: true
+      resume_checkpoint: finetuned_models/baseline/best_model_baseline.pth
+  save_dir: finetuned_models/V3
+dictitems:
+  device: cuda
+  seed: 42
+  log_interval: 10
+  data: *id004
+  backbone: *id005
+  Dictionary: *id006
+  training: *id007
+  save_dir: finetuned_models/V3
