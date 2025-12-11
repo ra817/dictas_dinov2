@@ -9,7 +9,7 @@ def inspect_pth(path):
 
     # Print global_dict_size if present
     if "global_dict_size" in ckpt:
-        print(f"\n🔍 global_dict_size = {ckpt['global_dict_size']}")
+        print(f"\n global_dict_size = {ckpt['global_dict_size']}")
     else:
         print("\nNo global_dict_size found in checkpoint.")
 
@@ -42,8 +42,8 @@ if __name__ == "__main__":
 # import torch
 
 # # Load checkpoints
-# ckpt_large = torch.load("finetuned_models/Iter_1_checkpoint/best_model_V1.pth", map_location="cpu")
-# ckpt_small = torch.load("finetuned_models/Iter_4_checkpoint_pcb_specific/best_model.pth", map_location="cpu")["state_dict"]
+# ckpt_large = torch.load("models/finetuned_models/baseline/best_model_baseline.pth", map_location="cpu")
+# ckpt_small = torch.load("finetuned_models/V7/best_model.pth", map_location="cpu")["state_dict"]
 
 # # Extract keys & values
 # keys_large = ckpt_large["dictionary.keys"]       # (4096, 768)

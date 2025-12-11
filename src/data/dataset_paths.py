@@ -14,7 +14,7 @@ def get_dataset_paths(name, root):
         return [root]
 
     # MVTec(15 categories)
-    if name in ["mvtec", "mvtecad"]:
+    elif name in ["mvtecad"]:
         subdirs = [
             os.path.join(root, d, "train", "good")
             for d in os.listdir(root)

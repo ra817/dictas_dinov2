@@ -19,77 +19,59 @@ class DictAS_DINO(nn.Module):
 
 
 
-
+    #main model inference function
     def forward(self, imgs):
 
-        #Extract patch embeddings
+        #Extract DINO features
         with torch.no_grad():
             feats_all = self.dinov2.get_intermediate_layers(
                 imgs, n=self.layer_indices, reshape=False, return_class_token=False
             )
             feats_proc = [F.normalize(f, dim=-1) for f in feats_all]
-            img_feats = torch.stack(feats_proc, dim=0).mean(0)   # (B, N, D)
+            img_feats = torch.stack(feats_proc, dim=0).mean(0)    # (B, N, D)
 
         B, N, D = img_feats.shape
         flat_feats = img_feats.reshape(B * N, D)
 
+        #projected keys & values
+        new_keys = F.normalize(self.dictionary.key_gen(flat_feats), dim=-1)
+        new_vals = F.normalize(self.dictionary.val_gen(flat_feats), dim=-1)
 
-        #Lookup normal dictionary reconstruction
-        retrieved, sim = self.dictionary.lookup(flat_feats, topk=self.top_k, temperature=self.lookup)
+        #Dictonary lookup
+        best_sim, best_idx, proj_q = self.dictionary.lookup(flat_feats)
+        print(best_sim)
 
+        #If dictionary is empty, no reconstruction
+        if best_sim is None:
+            #Return zero loss to let trainer insert all keys
+            warmup_loss = new_keys.pow(2).mean()
+            return warmup_loss, 0, 0, 0, new_keys, new_vals, best_sim, best_idx
 
-        #Compute patch-level similarity score
-        #top-k mean similarity = confidence of normal patch
-        topk_vals, _ = sim.topk(k=self.top_k, dim=-1)
-        patch_scores = topk_vals.mean(dim=-1)     
-
-        threshold = patch_scores.mean() - 1.5 * patch_scores.std()
-        threshold = threshold.clamp(min=0.2, max=0.5)
-        print(threshold)
-
-        #Create mask for NEW DICTIONARY ENTRY
-        mask_new = patch_scores < 0.2
-
-        #Replace reconstruction for new patches with trainable new values
-        for idx in torch.where(mask_new)[0]:
-
-            # Create new key/value pair 
-            new_key = nn.Parameter(
-                torch.randn(1, self.dictionary.keys.shape[-1], device=imgs.device) * 0.02
-            )
-            new_val = nn.Parameter(
-                torch.randn(1, self.dictionary.values.shape[-1], device=imgs.device) * 0.02
-            )
-
-            # Add to dictionary
-            self.dictionary.keys = nn.Parameter(
-                torch.cat([self.dictionary.keys, new_key], dim=0)
-            )
-            self.dictionary.values = nn.Parameter(
-                torch.cat([self.dictionary.values, new_val], dim=0)
-            )
-
-            retrieved[idx] = new_val.squeeze(0)
-
-        #reshape reconstruction back to (B, N, D)
+        #Compute retrieved features from dictionary
+        retrieved = self.dictionary.keys[best_idx]     
         retrieved = retrieved.view(B, N, D)
 
-
-        # Compute losses
-        diff = (img_feats - retrieved).pow(2).sum(-1)   # (B, N)
+        #Reconstruction loss
+        diff = (img_feats - retrieved).pow(2).sum(-1)
         L_recon = diff.mean()
 
-        h = int(N**0.5)
+        #Smoothness
+        h = int(N ** 0.5)
         diff_map = diff.view(B, h, h)
+
         L_smooth = (
             F.l1_loss(diff_map[:, :, 1:], diff_map[:, :, :-1]) +
             F.l1_loss(diff_map[:, 1:, :], diff_map[:, :-1, :])
         )
 
+        #Global alignment loss
         img_global = F.normalize(img_feats.mean(1), dim=-1)
-        dict_mean = F.normalize(self.dictionary.keys.mean(0, keepdim=True), dim=-1)
-        L_align = 1 - (img_global * dict_mean).sum(-1).mean()
+        dict_global = F.normalize(self.dictionary.keys.mean(0, keepdim=True), dim=-1)
 
+        L_align = 1 - (img_global * dict_global).sum(-1).mean()
+
+        #Total loss
         total_loss = L_recon + self.lambda_align * L_align + self.lambda_smooth * L_smooth
 
-        return total_loss, L_recon, L_align, L_smooth
+        return total_loss, L_recon, L_align, L_smooth, new_keys, new_vals, best_sim, best_idx
+

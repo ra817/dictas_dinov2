@@ -3,51 +3,79 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-
 class DictionaryModule(nn.Module):
-    def __init__(self, feat_dim=1024, key_dim=1024, val_dim=1024, dict_size=2048):
+    def __init__(self, feat_dim=768, key_dim=768, val_dim=768, dict_size=256):
         super().__init__()
 
-        #two projection layers(keys & values) to push features map of encoder is similiar space of dictionary(keys & values)
+        #projection layers to convert backbone embedding space(img) to dict embedding space
         self.key_gen = nn.Sequential(
-            nn.Linear(feat_dim, key_dim),
+            nn.Linear(feat_dim, 1024),
             nn.ReLU(),
-            nn.Linear(key_dim, key_dim)
+            nn.Dropout(0.1),               #dropout is added to off some of the neurons(to avoid model from memorizing)
+            nn.Linear(1024, key_dim)
         )
+
         self.val_gen = nn.Sequential(
-            nn.Linear(feat_dim, val_dim),
+            nn.Linear(feat_dim, 1024),
             nn.ReLU(),
-            nn.Linear(val_dim, val_dim)
+            nn.Dropout(0.1),
+            nn.Linear(1024, val_dim)
         )
 
-        #randomanly intialize the key and values features 
-        self.keys = nn.Parameter(torch.randn(dict_size, key_dim))
-        self.values = nn.Parameter(torch.randn(dict_size, val_dim))
-        nn.init.normal_(self.keys, std=0.02)
-        nn.init.normal_(self.values, std=0.02)
+        #Dictionary as buffer (NO GRADIENTS)
+        self.register_buffer("keys", torch.empty(dict_size, key_dim))
+        self.register_buffer("values", torch.empty(dict_size, val_dim))
 
 
 
-    '''
-    q_feats was intially shape: (1369,768)  x patch each of y dimension
-    projected using the key projection layer
-    normalized then and all the keys of the dict(4096,768)
-    then do matrix multiplication of (1369,768) * (768,4096) to get 1369,4096)
+    #LOOKUP
+    def lookup(self, q_feats, merge_threshold=0.80):
+        """
+        q_feats: (N, D)
+        returns:
+            best_sim: (N,)
+            best_idx: (N,) but only valid if dict not empty
+            q: projected normalized keys (for update or insert)
+        """
 
-    '''
-    def lookup(self, q_feats, topk=5, temperature=0.15):
-        """Retrieve dictionary vectors most similar to query features."""
+        #Projecting query feats
         q_proj = self.key_gen(q_feats)
-        q = F.normalize(q_proj, dim=-1)  
+        q = F.normalize(q_proj, dim=-1)
+
+        #CASE 1: Dictionary empty
+        if self.keys.numel() == 0:
+            return None, None, q
+
+        #Compute similarity to dictionary
         k = F.normalize(self.keys, dim=-1)
+        sim = torch.matmul(q, k.T)            #N, dict_size)
 
-        sim = torch.matmul(q, k.T)  #similarity (N, dict_size)
-        topk_vals, topk_idx = sim.topk(k=topk, dim=-1)
-        weights = F.softmax(topk_vals / temperature, dim=-1)
+        best_sim, best_idx = sim.max(dim=1)   #picked the top similiar keys(for respective patches) from the dict
 
-        v = self.values[topk_idx]  # retrieve values
-        retrieved = (weights.unsqueeze(-1) * v).sum(dim=1)
-        return retrieved, sim
+        return best_sim, best_idx, q
 
 
 
+
+    #EMA UPDATE of EXISTING ENTRY
+    @torch.no_grad()
+    def ema_update(self, idx, new_key, new_val, ema_decay=0.97):
+        self.keys[idx] = ema_decay * self.keys[idx] + (1 - ema_decay) * new_key
+        self.values[idx] = ema_decay * self.values[idx] + (1 - ema_decay) * new_val
+
+        # Normalize to keep stable
+        self.keys[idx] = F.normalize(self.keys[idx], dim=-1)
+        self.values[idx] = F.normalize(self.values[idx], dim=-1)
+
+
+
+    #INSERT NEW ENTRY (DYNAMIC GROW)
+    @torch.no_grad()
+    def insert(self, new_key, new_val):
+        new_key = new_key.unsqueeze(0)
+        new_val = new_val.unsqueeze(0)
+
+        self.keys = torch.cat([self.keys, new_key], dim=0)
+        self.values = torch.cat([self.values, new_val], dim=0)
+
+        #print(f"[DynamicDict] Inserted new entry → new size = {self.keys.shape[0]}")

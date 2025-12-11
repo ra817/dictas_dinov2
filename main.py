@@ -59,7 +59,6 @@ def main():
     )
 
 
-
     #DINOv2 Backbone
     dinov2 = load_backbone(cfg)  #DinoV2-b
     num_params = sum(p.numel() for p in dinov2.parameters())
@@ -83,14 +82,16 @@ def main():
         layer_indices=cfg.backbone.get("layer_indices", None),
         lookup_temp = cfg.Dictionary.Lookup_Temp,
         top_k = cfg.Dictionary.Top_k
-
     ).to(device)
+    
+    print("model loaded successfully!")
+
 
 
     #training continuity decision
     if cfg.training.continue_training:
         print(f"Continuing fine-tuning from {cfg.training.resume_checkpoint}")
-        model.load_state_dict(torch.load(cfg.training.resume_checkpoint, map_location=device))
+        model.load_state_dict(torch.load(cfg.training.resume_checkpoint, map_location=device)["state_dict"])
     else:
         print("Starting training from scratch...")
 
