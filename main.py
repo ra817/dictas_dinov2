@@ -67,7 +67,7 @@ def main():
 
 
     #Model
-    dictionary = DictionaryModule(
+    dictionary = TwoLayerDictionaryModule(
         feat_dim=cfg.Dictionary.feat_dim,
         key_dim=cfg.Dictionary.feat_dim,
         val_dim=cfg.Dictionary.feat_dim,

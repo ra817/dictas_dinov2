@@ -1,7 +1,7 @@
 # DictA-S (DINOv2) Configuration
 
 
-#System
+# System
 device: "cuda"
 seed: 42
 log_interval: 10
@@ -9,14 +9,8 @@ log_interval: 10
 
 #Dataset
 data:
-  dataset_names: ["normal"]  #"mvtecad", "mvtec3d", "visa", "mpdd", "btad", "realiad",
+  dataset_names: ["normal"]  
   dataset_roots:
-    mvtecad: "/SOLUTION/Anomaly_detection_project/dataset/MVTecAD"
-    mvtec3d: "/SOLUTION/Anomaly_detection_project/dataset/mvtec3D"
-    visa: "/SOLUTION/Anomaly_detection_project/dataset/visa"
-    btad: "/SOLUTION/Anomaly_detection_project/dataset/BeanTech_AD"
-    mpdd: "/SOLUTION/Anomaly_detection_project/dataset/MPDD"
-    realiad: "/SOLUTION/Anomaly_detection_project/dataset/Real-IAD/RealIAD/realiad_1024"
     normal: "/SOLUTION/Defect_detection_pcb/dataset/normal/test2"
 
   img_size: 518
@@ -29,36 +23,49 @@ backbone:
   repo: "facebookresearch/dinov2"
   name: "dinov2_vitb14"
   frozen: True
-  layer_indices: [2,5,8,11]
+  layer_indices: [2, 5, 8, 11]
 
 
+#DICTIONARIES(GLOBAL + PCB-SPECIFIC)
 Dictionary:
   feat_dim: 768
-  dict_size: 0
-  lambda_align: 0.05
-  lambda_smooth: 0.05
-  Lookup_Temp:   0.2
-  Top_k:         5
-  Merge_threshold: 0
-  Insert_threshold:  0
-  Ema_decay: 0.0
-  dictionary_updates: False
 
+  #GLOBAL DICTIONARY SETTINGS
+  global:
+    init_size: 0             #start empty → grows with universal PCB patterns
+    max_size: 300            #max universal patches
+    insert_threshold: 0.40   #only insert when very different
+    merge_threshold: 0.70    #only update when highly similar
+    ema_decay: 0.98          #global dictionary should update slowly
+
+  #PCB-SPECIFIC DICTIONARY SETTINGS (one per PCB architecture)
+  pcb:
+    init_size: 0
+    max_size: 50
+    insert_threshold: 0.15   # low threshold: inserts more easily
+    merge_threshold: 0.10    # easy to merge: fast learning for PCB-specific patterns
+    ema_decay: 0.85
+
+  #Shared settings
+  Lookup_Temp: 0.2
+  Top_k: 5
 
 
 #Training
 training:
   val_split: 0.2
-  num_epochs: 100
+  num_epochs: 12             #PCB-specific dictionary converges fast
   learning_rate: 0.0001
   batch_size: 2
   num_workers: 4
   optimizer: "AdamW"
   weight_decay: 0.0
-  patience: 100
+  patience: 8                #early stop when PCB dictionary stabilizes
+
+  #Fine-tuning continuation
   continue_training: False
-  resume_checkpoint: "finetuned_models/V6/best_model.pth"
+  resume_checkpoint: ""
 
 
-#Output
+#Output(checkpoint)
 save_dir: "finetuned_models/V2"
