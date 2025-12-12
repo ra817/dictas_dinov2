@@ -31,7 +31,7 @@ Dictionary:
   feat_dim: 768
 
   #GLOBAL DICTIONARY SETTINGS
-  global:
+  _global:
     init_size: 0             #start empty → grows with universal PCB patterns
     max_size: 300            #max universal patches
     insert_threshold: 0.40   #only insert when very different
@@ -49,18 +49,20 @@ Dictionary:
   #Shared settings
   Lookup_Temp: 0.2
   Top_k: 5
+  lambda_align: 0.05
+  lambda_smooth: 0.05
 
 
 #Training
 training:
   val_split: 0.2
-  num_epochs: 12             #PCB-specific dictionary converges fast
+  num_epochs: 20             #PCB-specific dictionary converges fast
   learning_rate: 0.0001
-  batch_size: 2
+  batch_size: 1
   num_workers: 4
   optimizer: "AdamW"
   weight_decay: 0.0
-  patience: 8                #early stop when PCB dictionary stabilizes
+  patience: 20                #early stop when PCB dictionary stabilizes
 
   #Fine-tuning continuation
   continue_training: False

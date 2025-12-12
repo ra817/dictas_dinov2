@@ -106,3 +106,13 @@ learned weights
 
 Solution:
 1: start with dict_size:0
+
+
+12/12/25
+When training starts:
+First few epochs(0-3) only the projection layers will be trained with gradient updates
+To reduce the variance of incoming feature map from dinoV2 backbone
+We will project feature map into pcb specific domain space
+This will make the key_gen and val_gen to be learned about pcb.
+
+Then after 3rd epoch:

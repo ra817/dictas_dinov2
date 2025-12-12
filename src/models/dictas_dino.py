@@ -22,40 +22,42 @@ class DictAS_DINO(nn.Module):
     #main model inference function
     def forward(self, imgs):
 
-        #Extract DINO features
+        #Extract frozen DINOv2 features
         with torch.no_grad():
             feats_all = self.dinov2.get_intermediate_layers(
                 imgs, n=self.layer_indices, reshape=False, return_class_token=False
             )
             feats_proc = [F.normalize(f, dim=-1) for f in feats_all]
-            img_feats = torch.stack(feats_proc, dim=0).mean(0)    # (B, N, D)
+            img_feats = torch.stack(feats_proc, dim=0).mean(0)
 
         B, N, D = img_feats.shape
         flat_feats = img_feats.reshape(B * N, D)
 
-        #projected keys & values
+
+        #Project patches into dictionary space
         new_keys = F.normalize(self.dictionary.key_gen(flat_feats), dim=-1)
         new_vals = F.normalize(self.dictionary.val_gen(flat_feats), dim=-1)
 
-        #Dictonary lookup
-        best_sim, best_idx, proj_q = self.dictionary.lookup(flat_feats)
-        print(best_sim)
 
-        #If dictionary is empty, no reconstruction
-        if best_sim is None:
-            #Return zero loss to let trainer insert all keys
-            warmup_loss = new_keys.pow(2).mean()
-            return warmup_loss, 0, 0, 0, new_keys, new_vals, best_sim, best_idx
+        #Lookup from BOTH global & PCB dictionaries
+        best_sim_g,  best_sim_p , recon_vals, q_proj, best_idx_g, best_idx_p = self.dictionary.lookup(flat_feats, self.top_k, self.lookup)
 
-        #Compute retrieved features from dictionary
-        retrieved = self.dictionary.keys[best_idx]     
-        retrieved = retrieved.view(B, N, D)
+
+        #If BOTH dictionaries empty: warmup
+        if best_sim_g is None and best_sim_p is None:
+            warmup_loss = (new_keys ** 2).mean()
+            return warmup_loss, new_keys, new_vals, None, None, None, None
+
+        #recon_vals = (B*N, D)
+        retrieved = recon_vals.view(B, N, D)
+
 
         #Reconstruction loss
         diff = (img_feats - retrieved).pow(2).sum(-1)
         L_recon = diff.mean()
 
-        #Smoothness
+
+        #Smoothness loss
         h = int(N ** 0.5)
         diff_map = diff.view(B, h, h)
 
@@ -64,14 +66,18 @@ class DictAS_DINO(nn.Module):
             F.l1_loss(diff_map[:, 1:, :], diff_map[:, :-1, :])
         )
 
-        #Global alignment loss
+
+        #Alignment loss
         img_global = F.normalize(img_feats.mean(1), dim=-1)
-        dict_global = F.normalize(self.dictionary.keys.mean(0, keepdim=True), dim=-1)
+        dict_global = F.normalize(self.dictionary.global_vals.mean(0, keepdim=True), dim=-1)
 
         L_align = 1 - (img_global * dict_global).sum(-1).mean()
 
+
         #Total loss
-        total_loss = L_recon + self.lambda_align * L_align + self.lambda_smooth * L_smooth
+        total_loss = (L_recon + self.lambda_align * L_align + self.lambda_smooth * L_smooth)
 
-        return total_loss, L_recon, L_align, L_smooth, new_keys, new_vals, best_sim, best_idx
 
+        #Return all important values for training
+        return total_loss, new_keys, new_vals, best_sim_g, best_sim_p, best_idx_g, best_idx_p
+        

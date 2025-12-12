@@ -7,7 +7,7 @@ from src.utils.config import load_config, set_seed
 from src.engine.trainer import train
 from src.models.backbone.loader import load_backbone
 from src.models.dictas_dino import DictAS_DINO
-from src.models.dictionary.dictionary import DictionaryModule
+from src.models.dictionary.dictionary import TwoLayerDictionaryModule
 
 
 
@@ -71,7 +71,6 @@ def main():
         feat_dim=cfg.Dictionary.feat_dim,
         key_dim=cfg.Dictionary.feat_dim,
         val_dim=cfg.Dictionary.feat_dim,
-        dict_size=cfg.Dictionary.dict_size
     ).to(device)
 
     model = DictAS_DINO(
