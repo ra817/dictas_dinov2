@@ -40,7 +40,8 @@ class DictAS_DINO(nn.Module):
 
 
         #Lookup from BOTH global & PCB dictionaries
-        best_sim_g,  best_sim_p , recon_vals, q_proj, best_idx_g, best_idx_p = self.dictionary.lookup(flat_feats, self.top_k, self.lookup)
+        best_sim_g,  best_sim_p , recon_vals, q_proj, best_idx_g, best_idx_p = self.dictionary.lookup(flat_feats, 
+                                                                                                      self.top_k, self.lookup)
 
 
         #If BOTH dictionaries empty: warmup
@@ -53,7 +54,7 @@ class DictAS_DINO(nn.Module):
 
 
         #Reconstruction loss
-        diff = (img_feats - retrieved).pow(2).sum(-1)
+        diff = (q_proj - retrieved).pow(2).sum(-1)
         L_recon = diff.mean()
 
 

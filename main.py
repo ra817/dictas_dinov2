@@ -71,6 +71,8 @@ def main():
         feat_dim=cfg.Dictionary.feat_dim,
         key_dim=cfg.Dictionary.feat_dim,
         val_dim=cfg.Dictionary.feat_dim,
+        global_init_size=cfg.Dictionary.Global.init_size,
+        pcb_init_size=cfg.Dictionary.pcb.init_size
     ).to(device)
 
     model = DictAS_DINO(
@@ -84,7 +86,6 @@ def main():
     ).to(device)
     
     print("model loaded successfully!")
-
 
 
     #training continuity decision

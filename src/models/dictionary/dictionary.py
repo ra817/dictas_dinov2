@@ -121,6 +121,7 @@ class TwoLayerDictionaryModule(nn.Module):
         self.global_keys[idx] = (ema_decay * self.global_keys[idx] + (1 - ema_decay) * new_key)
         self.global_keys[idx] = F.normalize(self.global_keys[idx], dim=-1)
 
+        ema_decay += 0.02
         self.global_vals[idx] = (ema_decay * self.global_vals[idx] + (1 - ema_decay) * new_val)
         self.global_vals[idx] = F.normalize(self.global_vals[idx], dim=-1)
 
@@ -130,6 +131,8 @@ class TwoLayerDictionaryModule(nn.Module):
     def ema_update_pcb(self, idx, new_key, new_val, ema_decay=0.7):
         self.pcb_keys[idx] = (ema_decay * self.pcb_keys[idx] + (1 - ema_decay) * new_key)
         self.pcb_keys[idx] = F.normalize(self.pcb_keys[idx], dim=-1)
+
+        ema_decay += 0.02
         self.pcb_vals[idx] = (ema_decay * self.pcb_vals[idx] + (1 - ema_decay) * new_val)
         self.pcb_vals[idx] = F.normalize(self.pcb_vals[idx], dim=-1)
 
