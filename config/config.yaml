@@ -11,7 +11,7 @@ log_interval: 10
 data:
   dataset_names: ["normal"]  
   dataset_roots:
-    normal: "/SOLUTION/Defect_detection_pcb/dataset/normal/test2"
+    normal: "/SOLUTION/Defect_detection_pcb/dataset/Demo/training_data"
 
   img_size: 518
   multi_scale: False
@@ -56,7 +56,7 @@ Dictionary:
 #Training
 training:
   val_split: 0.2
-  num_epochs: 20      #PCB-specific dictionary converges fast
+  num_epochs: 20       #PCB-specific dictionary converges fast
   learning_rate: 0.00001
   batch_size: 1
   num_workers: 4

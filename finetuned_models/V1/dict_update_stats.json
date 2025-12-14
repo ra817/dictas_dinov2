@@ -1,0 +1,54 @@
+{
+    "epochs": [
+        {
+            "epoch": 0,
+            "dict_sizes": {
+                "global": 0,
+                "pcb": 0
+            },
+            "global_update_count": {},
+            "pcb_update_count": {},
+            "train_loss": 0.0013020833716533768
+        },
+        {
+            "epoch": 1,
+            "dict_sizes": {
+                "global": 0,
+                "pcb": 0
+            },
+            "global_update_count": {},
+            "pcb_update_count": {},
+            "train_loss": 0.0013020833714108449
+        },
+        {
+            "epoch": 2,
+            "dict_sizes": {
+                "global": 0,
+                "pcb": 0
+            },
+            "global_update_count": {},
+            "pcb_update_count": {},
+            "train_loss": 0.0013020833721384406
+        },
+        {
+            "epoch": 3,
+            "dict_sizes": {
+                "global": 0,
+                "pcb": 0
+            },
+            "global_update_count": {},
+            "pcb_update_count": {},
+            "train_loss": 0.0013020833706832492
+        },
+        {
+            "epoch": 4,
+            "dict_sizes": {
+                "global": 0,
+                "pcb": 0
+            },
+            "global_update_count": {},
+            "pcb_update_count": {},
+            "train_loss": 0.001302083371168313
+        }
+    ]
+}

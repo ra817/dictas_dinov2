@@ -47,7 +47,7 @@ class TwoLayerDictionaryModule(nn.Module):
 
 
 
-    # LOOKUP(IN BOTH GLOBAL + PCB DICTIONARIES)
+    #LOOKUP(IN BOTH GLOBAL + PCB DICTIONARIES)
     def lookup(self, q_feats, top_k=5, temperature=0.2):
         """
         Returns:
